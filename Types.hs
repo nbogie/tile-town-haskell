@@ -17,12 +17,22 @@ intToTerrain 6 = Road
 type Rotation = Int
 
 data Tile = Tile { tileTemplate::TileTemplate
-                 , tileRotation::Rotation } deriving (Show)
+                 , tileRotation::Rotation
+                  } deriving (Show)
+
+data Special = Pennant | Start deriving (Show, Eq)
 
 data TileTemplate = 
   TileTemplate { filename :: FilePath
                , numOccs :: Int
+               , special :: Maybe Special
                , ends :: [Terrain]
                , grid :: [[Terrain]]
                } deriving (Show)
 
+tileHasPennant :: TileTemplate -> Bool
+tileHasPennant tmpl = special tmpl == Just Pennant
+tileIsStart tmpl = special tmpl == Just Start
+
+initRotation :: Rotation
+initRotation = 0
