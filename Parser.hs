@@ -10,6 +10,7 @@ main = do
   let templates = parse c
   let tiles = makeTileSet templates
   mapM_ print templates
+  return tiles
 
 parse :: String -> [TileTemplate]
 parse "" = []
@@ -23,13 +24,15 @@ parseOne (fname:x:y:info:gridlines) =
   TileTemplate fname 
                (read x)
                specialM
-               (map (intToTerrain . digitToInt . head) (words y)) $ parseGrid gridlines
+               (map (intToEndTerrain . digitToInt . head) (words y))
+               (parseGrid gridlines)
   where 
     specialM | "Pennant" `isPrefixOf` info = Just Pennant
              | "Start" `isPrefixOf` info = Just Start
              | otherwise                 = Nothing
 
 parseOne ls = error $ "Bad tileset data: " ++ (unlines ls)
+
 parseGrid :: [String] -> [[Terrain]]
 parseGrid gs = map (map (intToTerrain . digitToInt)) gs
 
@@ -38,5 +41,5 @@ makeTileSet = concatMap one
   where one :: TileTemplate -> [Tile]
         one template = replicate (numOccs template) $ mk
           where
-            mk = Tile template initRotation
+            mk = Tile template (tileTemplateTerrains template) initRotation
 
