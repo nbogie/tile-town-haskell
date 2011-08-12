@@ -1,8 +1,7 @@
 module TTH.Board where
 
-import Types
-import Parser hiding (main)
-import Test.HUnit
+import TTH.Types
+import TTH.Parser
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import Data.List (foldl', find)
@@ -10,8 +9,8 @@ isLegalPlacement :: Tile -> Position -> Board -> Bool
 isLegalPlacement = undefined
 
 -- Does no checking of game rules
-place :: Tile -> Position -> Board -> Board
-place t p b = Board newSlots
+place :: (Tile, Position) -> Board -> Board
+place (t, p) b = Board newSlots
   where 
     slots = playedTiles b
     newSlots = 
@@ -37,52 +36,6 @@ tileAt :: Board -> Position -> Maybe Tile
 tileAt b p = 
   M.lookup p (playedTiles b)
 
-main ::  IO Counts
-main = runTestTT tests
-
-tests :: Test
-tests = TestList [allTests]
-allTests :: Test
-allTests = TestList [ testNeighbours
-                    ]
-
-template1 :: TileTemplate
-template1 = parseOne ls
-  where
-   ls = [ "basic/bg010.png"
-        , "4"
-        , "1 6 6 1 "
-        , ""
-        , "1111111111"
-        , "1111111133"
-        , "1111113333"
-        , "1111133333"
-        , "1113333333"
-        , "1113333366"
-        , "1113333633"
-        , "1113336633"
-        , "1133363333"
-        , "1333363333" ]
-
-initBoard ::  Board
-initBoard = Board M.empty
-t1 :: Tile
-t1 = tileFromTemplate template1 0
-
-t1WithIds :: [Tile]
-t1WithIds = 
-  zipWith f [0..] $ cycle [t1]
-    where f :: TileId -> Tile -> Tile
-          f tId t = t { tileId = tId } 
-
-testNeighbours ::  Test
-testNeighbours = TestList [expected ~=? actual]
-  where 
-    expected = [Position 3 2, Position 2 3, Position 1 2]
-    actual = map (findTilePos bStart) $ neighbours (Position 2 2) bStart
-    bStart = foldl' addT initBoard $ zip t1WithIds (map t2p [(1,2), (3,2), (2,3), (3,3)])
-    addT :: Board -> (Tile, Position) -> Board
-    addT b (t, p) = place t p b
 
 findTilePos :: Board -> Tile -> Position
 findTilePos b t = case find (\(_p, tOther) -> tileId t == tileId tOther) kvs of
@@ -92,3 +45,32 @@ findTilePos b t = case find (\(_p, tOther) -> tileId t == tileId tOther) kvs of
 
 t2p :: (Int, Int) -> Position
 t2p (x,y) = Position x y
+
+boardAccepts :: (Tile, Position) -> Board -> Bool
+boardAccepts (t,p) b = do
+    emptySpot 
+    && hasANeighbour 
+    && sidesMatchOnAll
+  where
+    emptySpot = Nothing == M.lookup p (playedTiles b)
+    ns = neighbours p b
+    nswp = zip ns $ map (findTilePos b) ns
+    hasANeighbour = not $ null ns
+    sidesMatchOnAll = and $ map (accpt (t,p)) nswp
+
+accpt :: TPos -> TPos -> Bool
+accpt (t0, p0) (t1, p1) = accepts (t0, faceFromTo p0 p1) t1
+
+type TPos = (Tile, Position)
+
+areAdjacent :: Position -> Position -> Bool
+areAdjacent p0 p1 = p0 `elem` adjacentPositions p1
+
+-- which face on the first tile faces the second tile
+faceFromTo :: Position -> Position -> Face
+faceFromTo p0@(Position x0 y0) p1@(Position x1 y1) 
+  | x1 == x0     && y1 == y0 - 1 = NorthFace
+  | x1 == x0     && y1 == y0 + 1 = SouthFace
+  | x1 == x0 + 1 && y1 == y0     = EastFace
+  | x1 == x0 - 1 && y1 == y0     = WestFace
+  | otherwise = error $ "faceFromTo positions must be adjacent but were " ++ show [p0,p1]

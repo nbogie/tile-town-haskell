@@ -2,15 +2,8 @@ module TTH.Parser where
 
 import Data.Char (digitToInt)
 import Data.List (isPrefixOf)
-import System.Environment (getArgs)
 
 import TTH.Types
-
-main = do  
-  args <- getArgs
-  case args of
-      [tilesFile] -> demoParse tilesFile
-      _           -> error usage
 
 demoParse :: FilePath -> IO [Tile]
 demoParse fname = do
@@ -44,8 +37,8 @@ parseOne (fname:x:y:info:gridlines) =
 
 parseOne ls = error $ "Bad tileset data: " ++ unlines ls
 
-parseGrid :: [String] -> [[Terrain]]
-parseGrid = map (map (intToTerrain . digitToInt))
+parseGrid :: [String] -> Grid
+parseGrid = Grid . map (map (intToTerrain . digitToInt))
 
 makeTileSet :: [TileTemplate] -> [Tile]
 makeTileSet templates = m templates 0

@@ -48,19 +48,21 @@ type Rotation = Int
 
 data Tile = 
   Tile { tileId :: Int
-       , tileTemplate::TileTemplate
        , tileEndTerrains::[EndTerrain]
        , tileRotation::Rotation
+       , tileGrid :: Grid
        } deriving (Show, Eq, Ord)
 
 data Special = Pennant | Start deriving (Show, Eq, Ord)
-
+data Grid = Grid [[Terrain]] deriving (Eq, Ord)
+instance Show Grid where
+  show g = "<SomeGrid>"
 data TileTemplate = 
   TileTemplate { filename :: FilePath
                , numOccs :: Int
                , special :: Maybe Special
                , tileTemplateTerrains :: [EndTerrain]
-               , grid :: [[Terrain]]
+               , tileTemplateGrid :: Grid
                } deriving (Show, Eq, Ord)
 
 tileHasPennant :: TileTemplate -> Bool
@@ -84,8 +86,10 @@ type TileId = Int
 
 tileFromTemplate :: TileTemplate -> TileId -> Tile
 tileFromTemplate template tId = 
-  Tile tId template (tileTemplateTerrains template) 
+  Tile tId 
+       (tileTemplateTerrains template) 
        initRotation
+       (tileTemplateGrid template)
 
 data Board = Board { playedTiles :: M.Map Position Tile } deriving (Show)
 
@@ -99,11 +103,11 @@ data Player = Player String deriving (Show, Eq, Ord)
 featureOnFace :: Tile -> Face -> EndTerrain
 featureOnFace t f = tileEndTerrains t !! fromEnum f
 
-accepts :: Tile -> Face -> Tile -> Bool
-accepts t f otherT = endT == otherEndT
+accepts :: (Tile, Face) -> Tile -> Bool
+accepts (t1, f) t2 = end1 == end2
   where 
-    endT = featureOnFace t f
-    otherEndT = featureOnFace otherT (opposite f)
+    end1 = featureOnFace t1 f
+    end2 = featureOnFace t2 (opposite f)
 
 next :: (Enum a, Bounded a) => a -> a
 next = turn 1
