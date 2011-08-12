@@ -39,7 +39,4 @@ parseGrid gs = map (map (intToTerrain . digitToInt)) gs
 makeTileSet :: [TileTemplate] -> [Tile]
 makeTileSet = concatMap one
   where one :: TileTemplate -> [Tile]
-        one template = replicate (numOccs template) $ mk
-          where
-            mk = Tile template (tileTemplateTerrains template) initRotation
-
+        one template = replicate (numOccs template) $ tileFromTemplate template

@@ -1,5 +1,17 @@
 module Types where
 
+import Data.List (elemIndex)
+import Data.Maybe (fromJust)
+import qualified Data.Map as M
+
+data Position = Position Int Int deriving (Show, Ord, Eq)
+
+data Face = NorthFace 
+          | EastFace 
+          | SouthFace 
+          | WestFace 
+  deriving (Show, Eq, Ord)
+
 data Terrain = Road
              | City
              | Cloister
@@ -52,17 +64,31 @@ tileIsStart tmpl = special tmpl == Just Start
 initRotation :: Rotation
 initRotation = 0
 
-data Face = NorthFace 
-          | EastFace 
-          | SouthFace 
-          | WestFace 
-  deriving (Show, Eq, Ord)
-
 data RotationDir = CW | CCW deriving (Show, Eq)
 
 rotateElems :: [a] -> RotationDir -> [a]
 rotateElems [] _ = []
 rotateElems [t] _ = [t]
 rotateElems (t:rest) CCW = rest ++ [t]
-rotateElems ts        CW = last ts : init ts 
+rotateElems ts        CW = last ts : init ts
 
+tileFromTemplate :: TileTemplate -> Tile
+tileFromTemplate template = 
+  Tile template (tileTemplateTerrains template) initRotation
+
+data Board = Board { playedTiles :: M.Map Position Tile } deriving (Show)
+
+data Game = Game { gameBoard :: Board
+                 , gamePlayers :: [Player]
+                 , remainingTiles :: [Tile]
+                 }
+
+data Player = Player String deriving (Show, Eq, Ord)
+
+featureOnFace :: Tile -> Face -> EndTerrain
+featureOnFace t f = 
+  (tileEndTerrains t) !! (faceIndex f)
+
+-- TODO: avoid use of fromJust
+faceIndex :: Face -> Int
+faceIndex f =fromJust $ elemIndex f [NorthFace, EastFace, SouthFace, WestFace]
