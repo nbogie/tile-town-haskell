@@ -4,12 +4,9 @@ import Data.List (elemIndex)
 import Data.Maybe (fromJust)
 import qualified Data.Map as M
 
-data Direction = North | East | South | West deriving (Show, Eq, Ord, Enum)
+data Direction = North | East | South | West deriving (Show, Eq, Ord, Enum, Bounded)
 directionsNESW = [North .. West]
 facesNESW = [NorthFace .. WestFace]
-
-oppositeFace :: Face -> Face
-oppositeFace f = toEnum $ (2 + (fromEnum f)) `mod` 4
 
 data Position = Position Int Int deriving (Show, Ord, Eq)
 
@@ -17,7 +14,7 @@ data Face = NorthFace
           | EastFace 
           | SouthFace 
           | WestFace 
-  deriving (Show, Eq, Ord, Enum)
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 data Terrain = Road
              | City
@@ -44,7 +41,7 @@ intToEndTerrain i =
     City -> ECity
     Farm -> EFarm
     Road -> ERoad
-    _    -> error $ "Invalid EndTerrain int: " ++ (show i)
+    _    -> error $ "Invalid EndTerrain int: " ++ show i
 
 type Rotation = Int
 
@@ -97,11 +94,26 @@ data Game = Game { gameBoard :: Board
 data Player = Player String deriving (Show, Eq, Ord)
 
 featureOnFace :: Tile -> Face -> EndTerrain
-featureOnFace t f = (tileEndTerrains t) !! fromEnum f
+featureOnFace t f = tileEndTerrains t !! fromEnum f
 
 accepts :: Tile -> Face -> Tile -> Bool
 accepts t f otherT = endT == otherEndT
   where 
     endT = featureOnFace t f
-    otherEndT = featureOnFace otherT (oppositeFace f)
+    otherEndT = featureOnFace otherT (opposite f)
 
+next :: (Enum a, Bounded a) => a -> a
+next = turn 1
+
+prev :: (Enum a, Bounded a) => a -> a
+prev = turn (-1)
+
+-- TODO: this is only correct for even-element enumerations
+opposite :: (Enum a, Bounded a) => a -> a
+opposite e = turn halfNum e
+  where halfNum = 1 + fromEnum (maxBound `asTypeOf` e) `div` 2
+
+turn :: (Enum a, Bounded a) => Int -> a -> a
+turn n e = toEnum $ add (fromEnum (maxBound `asTypeOf` e) + 1) (fromEnum e) n
+    where
+      add mod x y = (x + y + mod) `rem` mod

@@ -31,10 +31,10 @@ parseOne (fname:x:y:info:gridlines) =
              | "Start" `isPrefixOf` info = Just Start
              | otherwise                 = Nothing
 
-parseOne ls = error $ "Bad tileset data: " ++ (unlines ls)
+parseOne ls = error $ "Bad tileset data: " ++ unlines ls
 
 parseGrid :: [String] -> [[Terrain]]
-parseGrid gs = map (map (intToTerrain . digitToInt)) gs
+parseGrid = map (map (intToTerrain . digitToInt))
 
 makeTileSet :: [TileTemplate] -> [Tile]
 makeTileSet templates = m templates 0
