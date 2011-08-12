@@ -1,17 +1,27 @@
-module Parser where
+module TTH.Parser where
 
 import Data.Char (digitToInt)
 import Data.List (isPrefixOf)
+import System.Environment (getArgs)
 
-import Types
+import TTH.Types
 
-main ::  IO [Tile]
 main = do  
-  c <- readFile "tileset.dat"
+  args <- getArgs
+  case args of
+      [tilesFile] -> demoParse tilesFile
+      _           -> error usage
+
+demoParse :: FilePath -> IO [Tile]
+demoParse fname = do
+  c <- readFile fname
   let templates = parse c
   let tiles = makeTileSet templates
   mapM_ print templates
   return tiles
+
+usage :: String
+usage = "prog path_to_tileset_file"
 
 parse :: String -> [TileTemplate]
 parse "" = []

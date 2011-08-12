@@ -47,11 +47,12 @@ Cabal-version:       >=1.4
 
 Executable tile-town-haskell
   -- .hs or .lhs file containing the Main module.
-  Main-is:             Game.hs
+  Main-is:             Main.hs
   ghc-options: -Wall -fno-warn-unused-do-bind -fno-warn-missing-signatures
   Hs-Source-Dirs:      src
   -- Packages needed in order to build this package.
   Build-depends:       
+    containers   ==  0.3.0.0,
     base         ==  4.2.0.0
   -- Modules not exported by this package.
   -- Other-modules:       

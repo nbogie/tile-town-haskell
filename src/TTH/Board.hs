@@ -1,4 +1,4 @@
-module Board where
+module TTH.Board where
 
 import Types
 import Parser hiding (main)
