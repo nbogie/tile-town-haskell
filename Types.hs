@@ -4,25 +4,32 @@ import Data.List (elemIndex)
 import Data.Maybe (fromJust)
 import qualified Data.Map as M
 
+data Direction = North | East | South | West deriving (Show, Eq, Ord, Enum)
+directionsNESW = [North .. West]
+facesNESW = [NorthFace .. WestFace]
+
+oppositeFace :: Face -> Face
+oppositeFace f = toEnum $ (2 + (fromEnum f)) `mod` 4
+
 data Position = Position Int Int deriving (Show, Ord, Eq)
 
 data Face = NorthFace 
           | EastFace 
           | SouthFace 
           | WestFace 
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum)
 
 data Terrain = Road
              | City
              | Cloister
              | Farm
              | Terminus
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data EndTerrain = ERoad 
                 | ECity 
                 | EFarm 
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 intToTerrain :: Int -> Terrain
 intToTerrain 1 = City
@@ -42,12 +49,13 @@ intToEndTerrain i =
 type Rotation = Int
 
 data Tile = 
-  Tile { tileTemplate::TileTemplate
+  Tile { tileId :: Int
+       , tileTemplate::TileTemplate
        , tileEndTerrains::[EndTerrain]
        , tileRotation::Rotation
-       } deriving (Show)
+       } deriving (Show, Eq, Ord)
 
-data Special = Pennant | Start deriving (Show, Eq)
+data Special = Pennant | Start deriving (Show, Eq, Ord)
 
 data TileTemplate = 
   TileTemplate { filename :: FilePath
@@ -55,7 +63,7 @@ data TileTemplate =
                , special :: Maybe Special
                , tileTemplateTerrains :: [EndTerrain]
                , grid :: [[Terrain]]
-               } deriving (Show)
+               } deriving (Show, Eq, Ord)
 
 tileHasPennant :: TileTemplate -> Bool
 tileHasPennant tmpl = special tmpl == Just Pennant
@@ -72,9 +80,12 @@ rotateElems [t] _ = [t]
 rotateElems (t:rest) CCW = rest ++ [t]
 rotateElems ts        CW = last ts : init ts
 
-tileFromTemplate :: TileTemplate -> Tile
-tileFromTemplate template = 
-  Tile template (tileTemplateTerrains template) initRotation
+type TileId = Int
+
+tileFromTemplate :: TileTemplate -> TileId -> Tile
+tileFromTemplate template tId = 
+  Tile tId template (tileTemplateTerrains template) 
+       initRotation
 
 data Board = Board { playedTiles :: M.Map Position Tile } deriving (Show)
 
@@ -86,9 +97,11 @@ data Game = Game { gameBoard :: Board
 data Player = Player String deriving (Show, Eq, Ord)
 
 featureOnFace :: Tile -> Face -> EndTerrain
-featureOnFace t f = 
-  (tileEndTerrains t) !! (faceIndex f)
+featureOnFace t f = (tileEndTerrains t) !! fromEnum f
 
--- TODO: avoid use of fromJust
-faceIndex :: Face -> Int
-faceIndex f =fromJust $ elemIndex f [NorthFace, EastFace, SouthFace, WestFace]
+accepts :: Tile -> Face -> Tile -> Bool
+accepts t f otherT = endT == otherEndT
+  where 
+    endT = featureOnFace t f
+    otherEndT = featureOnFace otherT (oppositeFace f)
+

@@ -1,11 +1,11 @@
 module Board where
 
 import Types
-import Parser
+import Parser hiding (main)
 import Test.HUnit
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
-
+import Data.List (foldl', find)
 isLegalPlacement :: Tile -> Position -> Board -> Bool
 isLegalPlacement = undefined
 
@@ -27,24 +27,22 @@ adjacentPositions :: Position -> [Position]
 adjacentPositions p = 
   map (adjacentPosition p) directionsNESW
 
-directionsNESW = [North .. West]
-
-data Direction = North | East | South | West deriving (Show, Eq, Ord)
 adjacentPosition :: Position -> Direction -> Position
-adjacentPosition = undefined
+adjacentPosition (Position x y) North = Position x     (y-1)
+adjacentPosition (Position x y) East  = Position (x+1) y
+adjacentPosition (Position x y) South = Position x     (y+1)
+adjacentPosition (Position x y) West  = Position (x-1) y
 
 tileAt :: Board -> Position -> Maybe Tile
-tileAt p b = 
-  M.lookup p playedTiles 
+tileAt b p = 
+  M.lookup p (playedTiles b)
+
 main = runTestTT tests
 
 tests = TestList [allTests]
 allTests = TestList [ 3 ~=? 3
-                    , "foo" ~=? "bar"
+                    , testNeighbours
                     ]
-
-templateFromString :: String -> TileTemplate
-templateFromString = undefined
 
 template1 :: TileTemplate
 template1 = parseOne ls
@@ -63,6 +61,29 @@ template1 = parseOne ls
         , "1113336633"
         , "1133363333"
         , "1333363333" ]
-
+initBoard = Board M.empty
 t1 :: Tile
-t1 = tileFromTemplate template1
+t1 = tileFromTemplate template1 0
+
+t1WithIds :: [Tile]
+t1WithIds = 
+  zipWith f [0..] $ cycle [t1]
+    where f :: TileId -> Tile -> Tile
+          f tId t = t { tileId = tId } 
+
+testNeighbours = TestList [expected ~=? actual]
+  where 
+    expected = [Position 3 2, Position 2 3, Position 1 2]
+    actual = map (findTilePos b) $ neighbours (Position 2 2) b
+    b = foldl' addT initBoard $ zip t1WithIds (map t2p [(1,2), (3,2), (2,3), (3,3)])
+    addT :: Board -> (Tile, Position) -> Board
+    addT b (t, p) = place t p b
+
+findTilePos :: Board -> Tile -> Position
+findTilePos b t = case find (\(p, tOther) -> tileId t == tileId tOther) kvs of
+    Just (p, tFound) -> p
+    Nothing -> error $ "Did not find tile "++ show (tileId t) ++" on board."
+  where kvs = M.assocs $ playedTiles b
+
+t2p :: (Int, Int) -> Position
+t2p (x,y) = Position x y
