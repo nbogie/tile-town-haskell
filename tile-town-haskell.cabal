@@ -49,7 +49,7 @@ Executable tile-town-haskell
   -- .hs or .lhs file containing the Main module.
   Main-is:             Game.hs
   ghc-options: -Wall -fno-warn-unused-do-bind -fno-warn-missing-signatures
-  -- Hs-Source-Dirs:      src
+  Hs-Source-Dirs:      src
   -- Packages needed in order to build this package.
   Build-depends:       
     base         ==  4.2.0.0
