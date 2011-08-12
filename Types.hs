@@ -1,20 +1,20 @@
 module Types where
 
-import Data.List (elemIndex)
-import Data.Maybe (fromJust)
 import qualified Data.Map as M
 
 data Direction = North | East | South | West deriving (Show, Eq, Ord, Enum, Bounded)
-directionsNESW = [North .. West]
-facesNESW = [NorthFace .. WestFace]
-
-data Position = Position Int Int deriving (Show, Ord, Eq)
-
 data Face = NorthFace 
           | EastFace 
           | SouthFace 
           | WestFace 
   deriving (Show, Eq, Ord, Enum, Bounded)
+
+nesw ::  [Direction]
+nesw = [North .. West]
+neswFaces ::  [Face]
+neswFaces = [NorthFace .. WestFace]
+
+data Position = Position Int Int deriving (Show, Ord, Eq)
 
 data Terrain = Road
              | City
@@ -34,6 +34,7 @@ intToTerrain 2 = Cloister
 intToTerrain 3 = Farm
 intToTerrain 4 = Terminus
 intToTerrain 6 = Road
+intToTerrain i = error $ "Unknown value for intToTerrain: " ++ show i
 
 intToEndTerrain :: Int -> EndTerrain
 intToEndTerrain i = 
@@ -64,6 +65,8 @@ data TileTemplate =
 
 tileHasPennant :: TileTemplate -> Bool
 tileHasPennant tmpl = special tmpl == Just Pennant
+
+tileIsStart ::  TileTemplate -> Bool
 tileIsStart tmpl = special tmpl == Just Start
 
 initRotation :: Rotation
@@ -116,4 +119,4 @@ opposite e = turn halfNum e
 turn :: (Enum a, Bounded a) => Int -> a -> a
 turn n e = toEnum $ add (fromEnum (maxBound `asTypeOf` e) + 1) (fromEnum e) n
     where
-      add mod x y = (x + y + mod) `rem` mod
+      add md x y = (x + y + md) `rem` md

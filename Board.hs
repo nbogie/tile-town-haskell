@@ -16,7 +16,7 @@ place t p b = Board newSlots
     slots = playedTiles b
     newSlots = 
       case M.lookup p slots of
-        (Just existing) -> error $ "Already a tile placed at "++ show p
+        (Just _) -> error $ "Already a tile placed at "++ show p
         _ -> M.insert p t slots
 
 neighbours :: Position -> Board -> [Tile]
@@ -25,7 +25,7 @@ neighbours pos b =
 
 adjacentPositions :: Position -> [Position]
 adjacentPositions p = 
-  map (adjacentPosition p) directionsNESW
+  map (adjacentPosition p) nesw 
 
 adjacentPosition :: Position -> Direction -> Position
 adjacentPosition (Position x y) North = Position x     (y-1)
@@ -37,11 +37,13 @@ tileAt :: Board -> Position -> Maybe Tile
 tileAt b p = 
   M.lookup p (playedTiles b)
 
+main ::  IO Counts
 main = runTestTT tests
 
+tests :: Test
 tests = TestList [allTests]
-allTests = TestList [ 3 ~=? 3
-                    , testNeighbours
+allTests :: Test
+allTests = TestList [ testNeighbours
                     ]
 
 template1 :: TileTemplate
@@ -61,6 +63,8 @@ template1 = parseOne ls
         , "1113336633"
         , "1133363333"
         , "1333363333" ]
+
+initBoard ::  Board
 initBoard = Board M.empty
 t1 :: Tile
 t1 = tileFromTemplate template1 0
@@ -71,17 +75,18 @@ t1WithIds =
     where f :: TileId -> Tile -> Tile
           f tId t = t { tileId = tId } 
 
+testNeighbours ::  Test
 testNeighbours = TestList [expected ~=? actual]
   where 
     expected = [Position 3 2, Position 2 3, Position 1 2]
-    actual = map (findTilePos b) $ neighbours (Position 2 2) b
-    b = foldl' addT initBoard $ zip t1WithIds (map t2p [(1,2), (3,2), (2,3), (3,3)])
+    actual = map (findTilePos bStart) $ neighbours (Position 2 2) bStart
+    bStart = foldl' addT initBoard $ zip t1WithIds (map t2p [(1,2), (3,2), (2,3), (3,3)])
     addT :: Board -> (Tile, Position) -> Board
     addT b (t, p) = place t p b
 
 findTilePos :: Board -> Tile -> Position
-findTilePos b t = case find (\(p, tOther) -> tileId t == tileId tOther) kvs of
-    Just (p, tFound) -> p
+findTilePos b t = case find (\(_p, tOther) -> tileId t == tileId tOther) kvs of
+    Just (p, _tile) -> p
     Nothing -> error $ "Did not find tile "++ show (tileId t) ++" on board."
   where kvs = M.assocs $ playedTiles b
 

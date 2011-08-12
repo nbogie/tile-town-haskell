@@ -5,6 +5,7 @@ import Data.List (isPrefixOf)
 
 import Types
 
+main ::  IO [Tile]
 main = do  
   c <- readFile "tileset.dat"
   let templates = parse c
