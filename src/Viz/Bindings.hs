@@ -34,6 +34,7 @@ reportKeyBindingsGroup kbs@((KeyBinding _ cat _ _):_) = (show cat) ++ "\n" ++ re
   where
     rest = (intercalate "\n" (map show kbs)) ++ "\n\n"
 
+keyBindings ::  [KeyBinding]
 keyBindings = [ 
   KeyBinding (GLUT.Char 'q') KBGen "Quit"               (\gs -> GLUT.leaveMainLoop),
   KeyBinding (GLUT.Char 'o') KBMov  "Rotate Up"         (\gs -> rotView gs rotAmt     1  0  0),

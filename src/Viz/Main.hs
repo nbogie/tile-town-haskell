@@ -15,7 +15,7 @@ main = do
   putStrLn $ "Any extra args apart from glut ones: " ++ show myArgs
   GLUT.initialDisplayMode $= [GLUT.DoubleBuffered, GLUT.RGBAMode, 
                               GLUT.WithDepthBuffer]
-  GLUT.createWindow "Haskell OpenGL HelloWorld"
+  GLUT.createWindow "Tile Town Haskell"
   -- windowSize :: StateVar Size
   GLUT.windowSize $= Size 800 700
   GLUT.windowPosition $= Position 300 50

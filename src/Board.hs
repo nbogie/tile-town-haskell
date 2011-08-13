@@ -41,12 +41,12 @@ adjacentPosition (Position x y) South = Position x     (y+1)
 adjacentPosition (Position x y) West  = Position (x-1) y
 
 tileAndPosAt :: Board -> Position -> Maybe TPos
-tileAndPosAt b p = case tileAt b p of
+tileAndPosAt b p = case hasTileAt b p of
   Just t -> Just (t, p)
   Nothing -> Nothing
 
-tileAt :: Board -> Position -> Maybe Tile
-tileAt b p = 
+hasTileAt :: Board -> Position -> Maybe Tile
+hasTileAt b p = 
   M.lookup p (playedTiles b)
 
 -- findTilePos :: Board -> Tile -> Position
