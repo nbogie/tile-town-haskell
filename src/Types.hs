@@ -17,6 +17,9 @@ neswFaces = [NorthFace .. WestFace]
 data Position = Position Int Int deriving (Show, Ord, Eq)
 type TPos = (Tile, Position)
 type Neighbour = (TPos, Direction)
+type TileMap = M.Map Position Tile
+
+pos (x,y) = Position x y
 
 data Terrain = Road
              | City
