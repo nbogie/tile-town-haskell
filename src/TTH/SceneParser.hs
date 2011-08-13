@@ -1,34 +1,31 @@
 module TTH.SceneParser where
 import TTH.Types
 import TTH.Parser
+import TTH.Board
 import TTH.TestingBase
 import Data.List(foldl')
 
-type SceneComp = (Maybe Tile, Position)
+parseScene :: String -> [[Maybe Tile]]
+parseScene s = pOne $ lines s
 
-parseScene :: String -> [[SceneComp]]
-parseScene s = pOne 1 $ lines s
+pOne :: [String] -> [[Maybe Tile]]
+pOne [] = error "expected first line"
+pOne (l:rest) = pTwo l rest
 
-pOne :: Int -> [String] -> [[SceneComp]]
-pOne i [] = error "expected first line"
-pOne i (l:rest) = pTwo i l rest
+pTwo :: String -> [String] -> [[Maybe Tile]]
+pTwo l1 [] = error "expected 2nd line"
+pTwo l1 (l2:rest) = pQuartets (l1,l2) : pSpacer rest
 
-pTwo :: Int -> String -> [String] -> [[SceneComp]]
-pTwo i l1 [] = error "expected 2nd line"
-pTwo i l1 (l2:rest) = pSceneComps i (l1,l2) : pSpacer (i+1) rest
+pSpacer :: [String] -> [[Maybe Tile]]
+pSpacer [] = []
+pSpacer ("":rest) = pOne rest
 
-pSpacer :: Int -> [String] -> [[SceneComp]]
-pSpacer i [] = []
-pSpacer i ("":rest) = pOne i rest
+pQuartets :: (String, String) -> [Maybe Tile]
+pQuartets (l1, l2) = map pQuartet $ quartets l1 l2
 
-pSceneComps :: Int -> (String, String) -> [SceneComp]
-pSceneComps i (l1, l2) = zipWith (addPos i) [1..] $ map pSceneComp $ quartets l1 l2
-  where
-    addPos row col tile = (tile, Position row col)
-
-pSceneComp :: Quartet -> Maybe Tile
-pSceneComp ('.', '.', '.', '.') = Nothing
-pSceneComp (cn,ce,cs,cw) = 
+pQuartet :: Quartet -> Maybe Tile
+pQuartet ('.', '.', '.', '.') = Nothing
+pQuartet (cn,ce,cs,cw) = 
   Just $ mkTile $ map c2e [cn,ce,cs,cw]
   where
     mkTile ends = initTile {tileEndTerrains = ends }
@@ -44,3 +41,14 @@ quartets l1 l2 = zipWith j (words l1) (words l2)
     j [cn,ce] [cw,cs] = (cn,ce,cs,cw)
     j other1  other2  = error $ "Bad strings for quartet: " ++ show [other1, other2]
   
+parseSceneToBoard :: String -> Board
+parseSceneToBoard s = 
+  foldl' f initBoard $ zip [1..] $ parseScene s
+  where
+    f ::  Board -> (Int, [Maybe Tile]) -> Board
+    f b (row, scs) = foldl' (g row) b $ zip [1..] scs 
+      where 
+        g :: Int -> Board -> (Int, Maybe Tile) -> Board
+        g row b (col, Just t) = place (t, Position col row) b
+        g _   b (_, Nothing)  = b
+

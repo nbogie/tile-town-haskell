@@ -8,34 +8,6 @@ import Data.List (foldl', find)
 import TTH.TestingBase
 import TTH.SceneParser
 
-template1 :: TileTemplate
-template1 = parseOne ls
-  where
-   ls = [ "basic/bg010.png"
-        , "4"
-        , "1 6 6 1 "
-        , ""
-        , "1111111111"
-        , "1111111133"
-        , "1111113333"
-        , "1111133333"
-        , "1113333333"
-        , "1113333366"
-        , "1113333633"
-        , "1113336633"
-        , "1133363333"
-        , "1333363333" ]
-
-t1 :: Tile
-t1 = tileFromTemplate template1 0
-
-t1WithIds :: [Tile]
-t1WithIds = 
-  zipWith f [0..] $ cycle [t1]
-    where f :: TileId -> Tile -> Tile
-          f tId t = t { tileId = tId } 
-
-
 testNeighbours ::  Test
 testNeighbours = TestList [expected ~=? actual]
   where 
@@ -80,15 +52,13 @@ testFeatureOnFace = TestList
 
 
 testBoardAccepts = "boardAccepts" ~:
-  TestList [ 
-    "occupied" ~: False ~=?  boardAccepts (t1, (Position 2 3)) b
+  TestList 
+    [ "occupied" ~: False ~=?  boardAccepts (t1, (Position 2 3)) b
     , "simpleok" ~: True ~=?  boardAccepts (mk 3 2 (replicate 4 ERoad)) bSimple 
     , "oneside" ~: True ~=?  boardAccepts (mk 3 2 [ECity,ECity, ECity, ERoad]) bSimple 
     , "oneside" ~: True ~=?  boardAccepts (mk 3 2 [ECity,ECity, ECity, ERoad]) bSimple 
-    , TestCase $ putStrLn $ show board2
-    , TestCase $ putStrLn $ "Neighbours on 2,2: \n" ++ show (neighbours (Position 2 2) board2)
     , "good" ~: True ~=?  boardAccepts (mk 2 2 [ECity, EFarm, ERoad, EFarm]) board2 
-  ]
+    ]
   where
     b = bStart
     bSimple = place (mk 2 2 [EFarm, ERoad, EFarm, EFarm]) initBoard
@@ -111,15 +81,30 @@ board2 = parseSceneToBoard scene
       , "ff .. ff"
       , "ff .. ff"
       ]
+------- Sample Data --------------
+template1 :: TileTemplate
+template1 = parseOne ls
+  where
+   ls = [ "basic/bg010.png"
+        , "4"
+        , "1 6 6 1 "
+        , ""
+        , "1111111111"
+        , "1111111133"
+        , "1111113333"
+        , "1111133333"
+        , "1113333333"
+        , "1113333366"
+        , "1113333633"
+        , "1113336633"
+        , "1133363333"
+        , "1333363333" ]
 
-parseSceneToBoard :: String -> Board
-parseSceneToBoard s = 
-  foldl' f initBoard $ zip [1..] $ parseScene s
+t1 :: Tile
+t1 = tileFromTemplate template1 0
 
-f ::  Board -> (Int, [SceneComp]) -> Board
-f b (row, scs) = foldl' (g row) b $ zip [1..] scs 
-
-g :: Int -> Board -> (Int, SceneComp) -> Board
-g row b (col, (Just t, p)) = place (t, Position row col) b
-g _   b (_, (Nothing, p))  = b
-
+t1WithIds :: [Tile]
+t1WithIds = 
+  zipWith f [0..] $ cycle [t1]
+    where f :: TileId -> Tile -> Tile
+          f tId t = t { tileId = tId } 
