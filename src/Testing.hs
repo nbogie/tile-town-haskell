@@ -11,13 +11,13 @@ import SceneParser
 testNeighbours ::  Test
 testNeighbours = TestList [expected ~=? actual]
   where 
-    expected = [Position 3 2, Position 2 3, Position 1 2]
-    actual = map (snd . fst) $ neighbours (Position 2 2) bStart
+    expected = [Posn 3 2, Posn 2 3, Posn 1 2]
+    actual = map (snd . fst) $ neighbours (Posn 2 2) bStart
 
 bStart = 
   foldl' addT initBoard $ zip t1WithIds (map t2p [(1,2), (3,2), (2,3), (3,3)])
   where
-    addT :: Board -> (Tile, Position) -> Board
+    addT :: Board -> (Tile, Posn) -> Board
     addT b (t, p) = place (t, p) b
 
 main ::  IO Counts
@@ -36,11 +36,11 @@ allTests = TestList [ testNeighbours
 
 testFaceFromTo = 
   TestList [
-    NorthFace ~=? faceFromTo (Position 2 8) (Position 2 7)
-    , WestFace ~=? faceFromTo (Position 2 8) (Position 1 8)
-    , EastFace ~=? faceFromTo (Position 2 8) (Position 3 8)
-    , SouthFace ~=? faceFromTo (Position 2 8) (Position 2 9)
---    , expectError "foo" $ TestCase (faceFromTo (Position 2 8) (Position 3 3))
+    NorthFace ~=? faceFromTo (Posn 2 8) (Posn 2 7)
+    , WestFace ~=? faceFromTo (Posn 2 8) (Posn 1 8)
+    , EastFace ~=? faceFromTo (Posn 2 8) (Posn 3 8)
+    , SouthFace ~=? faceFromTo (Posn 2 8) (Posn 2 9)
+--    , expectError "foo" $ TestCase (faceFromTo (Posn 2 8) (Posn 3 3))
   ]
 
 testFeatureOnFace = TestList
@@ -54,7 +54,7 @@ testFeatureOnFace = TestList
 
 testBoardAccepts = "boardAccepts" ~:
   TestList 
-    [ "occupied" ~: False ~=?  boardAccepts (t1, Position 2 3) b
+    [ "occupied" ~: False ~=?  boardAccepts (t1, Posn 2 3) b
     , "simpleok" ~: True ~=?  boardAccepts (mk 3 2 (replicate 4 ERoad)) bSimple 
     , "oneside" ~: True ~=?  boardAccepts (mk 3 2 [ECity,ECity, ECity, ERoad]) bSimple 
     , "oneside" ~: True ~=?  boardAccepts (mk 3 2 [ECity,ECity, ECity, ERoad]) bSimple 
@@ -63,7 +63,7 @@ testBoardAccepts = "boardAccepts" ~:
   where
     b = bStart
     bSimple = place (mk 2 2 [EFarm, ERoad, EFarm, EFarm]) initBoard
-    mk x y grd = (initTile { tileEndTerrains = grd }, Position x y)
+    mk x y grd = (initTile { tileEndTerrains = grd }, Posn x y)
 
 testAccepts = "accepts" ~: 
   TestList 
@@ -71,7 +71,7 @@ testAccepts = "accepts" ~:
   , True ~=? accpt (mk 2 2 [EFarm, ERoad, EFarm, EFarm]) (mk 3 2 [ECity, ECity, ECity, ERoad])
   ]
 
-mk x y grd = (initTile { tileEndTerrains = grd }, Position x y)
+mk x y grd = (initTile { tileEndTerrains = grd }, Posn x y)
 
 board2 = parseSceneToBoard scene
   where
@@ -112,4 +112,4 @@ t1WithIds =
 
 testWouldFit = 
   Just [Just ECity, Just EFarm, Nothing, Just EFarm] 
-  ~=? wouldFit board2 (Position 2 2)
+  ~=? wouldFit board2 (Posn 2 2)

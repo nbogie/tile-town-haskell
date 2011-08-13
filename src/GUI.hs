@@ -3,7 +3,7 @@ import Data.IORef ( IORef, newIORef )
 import System.Exit ( exitWith, ExitCode(ExitSuccess) )
 import Graphics.UI.GLUT as GLUT
 import Graphics.Rendering.OpenGL as GL
-import Types hiding (Position)
+import Types
 import Parser (demoParse)
 import Control.Monad 
 import Data.Map as M
@@ -25,14 +25,15 @@ drawTiles tmap = do
   let ts = M.assocs tmap
   forM_ ts drawTile
 
-drawTile (p,t) = do
+drawTile tpos@(Posn x y,t) = do
   GL.preservingMatrix $ do
-    GL.translate $ Vector3 (0.11::GLfloat) 0.0 0
     let Grid g = tileGrid t
     forM_ (zip g [1..]) $ (\(gridLine,row) -> 
       forM_ (zip gridLine [1..]) $ (\(ter, col) -> do
-        drawMyCube (col/10.0) (row/10.0) 0 (colorFor ter) 0.05
+        drawMyCube (bip x + col/10.0) (bip y + row/10.0) 0 (colorFor ter) 0.05
       ))
+  where bip :: Int -> GLfloat
+        bip = fromIntegral 
 
 drawMyCube :: GLfloat -> GLfloat -> GLfloat -> Color4 GLfloat -> Height -> IO ()
 drawMyCube x y rot colr sz = do
@@ -40,7 +41,7 @@ drawMyCube x y rot colr sz = do
   GL.preservingMatrix $ do
       GL.scale s s s
       GL.translate $ Vector3 x y 0
-      GL.rotate rot $ Vector3 1 0 0
+      GL.rotate rot $ Vector3 0 0 1
       GLUT.renderObject GLUT.Solid (GLUT.Cube sz)
   where s = 0.1::GLfloat
 
@@ -78,7 +79,7 @@ positionTiles :: [Tile] -> TileMap
 positionTiles ts = 
   foldl' f M.empty $ zip ts [1..]
   where f :: TileMap -> (Tile, Int) -> TileMap
-        f tmap (t,i) = M.insert (pos ((i `mod` 10), (i `div` 10))) t tmap
+        f tmap (t,i) = M.insert (Posn (i `mod` 10) (i `div` 10)) t tmap
 
 -- Main Loop
 -- Open window with initial window size, title bar, RGBA display mode, and

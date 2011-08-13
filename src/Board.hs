@@ -5,11 +5,11 @@ import Parser
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import Data.List (foldl', find)
-isLegalPlacement :: Tile -> Position -> Board -> Bool
+isLegalPlacement :: Tile -> Posn -> Board -> Bool
 isLegalPlacement = undefined
 
 -- Does no checking of game rules
-place :: (Tile, Position) -> Board -> Board
+place :: (Tile, Posn) -> Board -> Board
 place (t, p) b = Board newSlots
   where 
     slots = playedTiles b
@@ -18,47 +18,47 @@ place (t, p) b = Board newSlots
         (Just _) -> error $ "Already a tile placed at "++ show p
         _ -> M.insert p t slots
 
-neighbours :: Position -> Board -> [Neighbour]
+neighbours :: Posn -> Board -> [Neighbour]
 neighbours p b = 
-  mapMaybe f (adjacentPositionsAnnotated p)
+  mapMaybe f (adjacentPosnsAnnotated p)
     where 
       f (pAdj,dir) = 
         case tileAndPosAt b pAdj of
           Just tpos -> Just (tpos, dir)
           Nothing -> Nothing 
 
-adjacentPositionsAnnotated :: Position -> [(Position, Direction)]
-adjacentPositionsAnnotated p = zip (adjacentPositions p) nesw
+adjacentPosnsAnnotated :: Posn -> [(Posn, Direction)]
+adjacentPosnsAnnotated p = zip (adjacentPosns p) nesw
 
-adjacentPositions :: Position -> [Position]
-adjacentPositions p = 
-  map (adjacentPosition p) nesw 
+adjacentPosns :: Posn -> [Posn]
+adjacentPosns p = 
+  map (adjacentPosn p) nesw 
 
-adjacentPosition :: Position -> Direction -> Position
-adjacentPosition (Position x y) North = Position x     (y-1)
-adjacentPosition (Position x y) East  = Position (x+1) y
-adjacentPosition (Position x y) South = Position x     (y+1)
-adjacentPosition (Position x y) West  = Position (x-1) y
+adjacentPosn :: Posn -> Direction -> Posn
+adjacentPosn (Posn x y) North = Posn x     (y-1)
+adjacentPosn (Posn x y) East  = Posn (x+1) y
+adjacentPosn (Posn x y) South = Posn x     (y+1)
+adjacentPosn (Posn x y) West  = Posn (x-1) y
 
-tileAndPosAt :: Board -> Position -> Maybe TPos
+tileAndPosAt :: Board -> Posn -> Maybe TPos
 tileAndPosAt b p = case hasTileAt b p of
   Just t -> Just (t, p)
   Nothing -> Nothing
 
-hasTileAt :: Board -> Position -> Maybe Tile
+hasTileAt :: Board -> Posn -> Maybe Tile
 hasTileAt b p = 
   M.lookup p (playedTiles b)
 
--- findTilePos :: Board -> Tile -> Position
+-- findTilePos :: Board -> Tile -> Posn
 -- findTilePos b t = case find (\(_p, tOther) -> tileId t == tileId tOther) kvs of
 --    Just (p, _tile) -> p
 --    Nothing -> error $ "Did not find tile "++ show (tileId t) ++" on board."
 --  where kvs = M.assocs $ playedTiles b
 
-t2p :: (Int, Int) -> Position
-t2p (x,y) = Position x y
+t2p :: (Int, Int) -> Posn
+t2p (x,y) = Posn x y
 
-boardAccepts :: (Tile, Position) -> Board -> Bool
+boardAccepts :: (Tile, Posn) -> Board -> Bool
 boardAccepts (t,p) b =
     emptySpot 
     && hasANeighbour 
@@ -73,19 +73,19 @@ boardAccepts (t,p) b =
 accpt :: TPos -> TPos -> Bool
 accpt (t0, p0) (t1, p1) = accepts (t0, faceFromTo p0 p1) t1
 
-areAdjacent :: Position -> Position -> Bool
-areAdjacent p0 p1 = p0 `elem` adjacentPositions p1
+areAdjacent :: Posn -> Posn -> Bool
+areAdjacent p0 p1 = p0 `elem` adjacentPosns p1
 
 -- which face on the first tile faces the second tile
-faceFromTo :: Position -> Position -> Face
-faceFromTo p0@(Position x0 y0) p1@(Position x1 y1) 
+faceFromTo :: Posn -> Posn -> Face
+faceFromTo p0@(Posn x0 y0) p1@(Posn x1 y1) 
   | x1 == x0     && y1 == y0 - 1 = NorthFace
   | x1 == x0     && y1 == y0 + 1 = SouthFace
   | x1 == x0 + 1 && y1 == y0     = EastFace
   | x1 == x0 - 1 && y1 == y0     = WestFace
   | otherwise = error $ "faceFromTo positions must be adjacent but were " ++ show [p0,p1]
 
-wouldFit :: Board -> Position -> Maybe [Maybe EndTerrain]
+wouldFit :: Board -> Posn -> Maybe [Maybe EndTerrain]
 wouldFit b p = 
   if emptySpot && hasANeighbour
     then Just $ makeMatchingEndsFor ns

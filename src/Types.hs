@@ -14,12 +14,12 @@ nesw = [North .. West]
 neswFaces ::  [Face]
 neswFaces = [NorthFace .. WestFace]
 
-data Position = Position Int Int deriving (Show, Ord, Eq)
-type TPos = (Tile, Position)
+data Posn = Posn Int Int deriving (Show, Ord, Eq)
+type TPos = (Tile, Posn)
 type Neighbour = (TPos, Direction)
-type TileMap = M.Map Position Tile
+type TileMap = M.Map Posn Tile
 
-pos (x,y) = Position x y
+pos (x,y) = Posn x y
 
 data Terrain = Road
              | City
@@ -96,7 +96,7 @@ tileFromTemplate template tId =
        initRotation
        (tileTemplateGrid template)
 
-data Board = Board { playedTiles :: M.Map Position Tile } deriving (Show)
+data Board = Board { playedTiles :: M.Map Posn Tile } deriving (Show)
 
 data Game = Game { gameBoard :: Board
                  , gamePlayerNames :: [Player]

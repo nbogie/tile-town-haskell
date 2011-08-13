@@ -49,6 +49,6 @@ parseSceneToBoard s =
     f b (row, scs) = foldl' (g row) b $ zip [1..] scs 
       where 
         g :: Int -> Board -> (Int, Maybe Tile) -> Board
-        g row b (col, Just t) = place (t, Position col row) b
+        g row b (col, Just t) = place (t, Posn col row) b
         g _   b (_, Nothing)  = b
 
