@@ -1,4 +1,4 @@
-module TTH.Types where
+module Types where
 
 import qualified Data.Map as M
 
@@ -96,11 +96,11 @@ tileFromTemplate template tId =
 data Board = Board { playedTiles :: M.Map Position Tile } deriving (Show)
 
 data Game = Game { gameBoard :: Board
-                 , gamePlayers :: [Player]
+                 , gamePlayerNames :: [Player]
                  , remainingTiles :: [Tile]
                  }
 
-data Player = Player String deriving (Show, Eq, Ord)
+data PlayerName = PlayerName String deriving (Show, Eq, Ord)
 
 featureOnFace :: Tile -> Face -> EndTerrain
 featureOnFace t f = tileEndTerrains t !! fromEnum f
@@ -126,3 +126,5 @@ turn :: (Enum a, Bounded a) => Int -> a -> a
 turn n e = toEnum $ add (fromEnum (maxBound `asTypeOf` e) + 1) (fromEnum e) n
     where
       add md x y = (x + y + md) `rem` md
+
+data Player = Player1 | Player2 deriving (Eq, Show, Enum)

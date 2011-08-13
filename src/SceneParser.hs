@@ -1,8 +1,8 @@
-module TTH.SceneParser where
-import TTH.Types
-import TTH.Parser
-import TTH.Board
-import TTH.TestingBase
+module SceneParser where
+import Types
+import Parser
+import Board
+import TestingBase
 import Data.List(foldl')
 
 parseScene :: String -> [[Maybe Tile]]

@@ -1,12 +1,12 @@
-module TTH.Testing where
-import TTH.Board
-import TTH.Types
-import TTH.Parser
+module Testing where
+import Board
+import Types
+import Parser
 import Test.HUnit
 import qualified Data.Map as M
 import Data.List (foldl', find)
-import TTH.TestingBase
-import TTH.SceneParser
+import TestingBase
+import SceneParser
 
 testNeighbours ::  Test
 testNeighbours = TestList [expected ~=? actual]

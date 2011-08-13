@@ -1,9 +1,9 @@
-module TTH.Parser where
+module Parser where
 
 import Data.Char (digitToInt)
 import Data.List (isPrefixOf)
 
-import TTH.Types
+import Types
 
 demoParse :: FilePath -> IO [Tile]
 demoParse fname = do

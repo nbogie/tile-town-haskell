@@ -1,6 +1,6 @@
-module TTH.TestingBase where
-import TTH.Types
-import TTH.Board
+module TestingBase where
+import Types
+import Board
 import qualified Data.Map as M
 initTile ::  Tile
 initTile = 
@@ -16,5 +16,3 @@ initTileTemplate =
                [ECity, ERoad, ERoad, EFarm] 
                (Grid [[]])
                
-initBoard ::  Board
-initBoard = Board M.empty

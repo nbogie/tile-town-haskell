@@ -1,7 +1,7 @@
-module TTH.Board where
+module Board where
 
-import TTH.Types
-import TTH.Parser
+import Types
+import Parser
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import Data.List (foldl', find)
@@ -111,3 +111,5 @@ featureOnNeighbour ((t, p), d) = featureOnFace t f
 dir2Face :: Direction -> Face
 dir2Face d = toEnum (fromEnum d)
 
+initBoard ::  Board
+initBoard = Board M.empty
