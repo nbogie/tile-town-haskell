@@ -1,6 +1,6 @@
 module Main where
 
-import TTH.Types
+-- import TTH.Types
 import TTH.Parser
 
 import System.Environment (getArgs)

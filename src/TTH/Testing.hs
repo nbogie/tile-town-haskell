@@ -12,7 +12,7 @@ testNeighbours ::  Test
 testNeighbours = TestList [expected ~=? actual]
   where 
     expected = [Position 3 2, Position 2 3, Position 1 2]
-    actual = map snd $ neighbours (Position 2 2) bStart
+    actual = map (snd . fst) $ neighbours (Position 2 2) bStart
 
 bStart = 
   foldl' addT initBoard $ zip t1WithIds (map t2p [(1,2), (3,2), (2,3), (3,3)])
@@ -31,6 +31,7 @@ allTests = TestList [ testNeighbours
                     , testBoardAccepts
                     , testFeatureOnFace
                     , testAccepts
+                    , testWouldFit
                     ]
 
 testFaceFromTo = 
@@ -53,7 +54,7 @@ testFeatureOnFace = TestList
 
 testBoardAccepts = "boardAccepts" ~:
   TestList 
-    [ "occupied" ~: False ~=?  boardAccepts (t1, (Position 2 3)) b
+    [ "occupied" ~: False ~=?  boardAccepts (t1, Position 2 3) b
     , "simpleok" ~: True ~=?  boardAccepts (mk 3 2 (replicate 4 ERoad)) bSimple 
     , "oneside" ~: True ~=?  boardAccepts (mk 3 2 [ECity,ECity, ECity, ERoad]) bSimple 
     , "oneside" ~: True ~=?  boardAccepts (mk 3 2 [ECity,ECity, ECity, ERoad]) bSimple 
@@ -107,4 +108,8 @@ t1WithIds :: [Tile]
 t1WithIds = 
   zipWith f [0..] $ cycle [t1]
     where f :: TileId -> Tile -> Tile
-          f tId t = t { tileId = tId } 
+          f tId t = t { tileId = tId }
+
+testWouldFit = 
+  Just [Just ECity, Just EFarm, Nothing, Just EFarm] 
+  ~=? wouldFit board2 (Position 2 2)

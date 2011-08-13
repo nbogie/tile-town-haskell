@@ -9,7 +9,6 @@ data Face = NorthFace
           | WestFace 
   deriving (Show, Eq, Ord, Enum, Bounded)
 
-
 nesw ::  [Direction]
 nesw = [North .. West]
 neswFaces ::  [Face]
@@ -17,6 +16,7 @@ neswFaces = [NorthFace .. WestFace]
 
 data Position = Position Int Int deriving (Show, Ord, Eq)
 type TPos = (Tile, Position)
+type Neighbour = (TPos, Direction)
 
 data Terrain = Road
              | City
@@ -58,7 +58,7 @@ data Tile =
 data Special = Pennant | Start deriving (Show, Eq, Ord)
 data Grid = Grid [[Terrain]] deriving (Eq, Ord)
 instance Show Grid where
-  show g = "<SomeGrid>"
+  show _g = "<SomeGrid>"
 data TileTemplate = 
   TileTemplate { filename :: FilePath
                , numOccs :: Int
