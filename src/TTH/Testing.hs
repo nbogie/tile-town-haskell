@@ -5,6 +5,8 @@ import TTH.Parser
 import Test.HUnit
 import qualified Data.Map as M
 import Data.List (foldl', find)
+import TTH.TestingBase
+import TTH.SceneParser
 
 template1 :: TileTemplate
 template1 = parseOne ls
@@ -24,22 +26,6 @@ template1 = parseOne ls
         , "1133363333"
         , "1333363333" ]
 
-initTile ::  Tile
-initTile = 
-  Tile 0 
-       (tileTemplateTerrains initTileTemplate)
-       0
-       (tileTemplateGrid initTileTemplate)
-
-initTileTemplate = 
-  TileTemplate "fname"
-               3
-               (Just Pennant)
-               [ECity, ERoad, ERoad, EFarm] 
-               (Grid [[]])
-               
-initBoard ::  Board
-initBoard = Board M.empty
 t1 :: Tile
 t1 = tileFromTemplate template1 0
 
@@ -54,7 +40,7 @@ testNeighbours ::  Test
 testNeighbours = TestList [expected ~=? actual]
   where 
     expected = [Position 3 2, Position 2 3, Position 1 2]
-    actual = map (findTilePos bStart) $ neighbours (Position 2 2) bStart
+    actual = map snd $ neighbours (Position 2 2) bStart
 
 bStart = 
   foldl' addT initBoard $ zip t1WithIds (map t2p [(1,2), (3,2), (2,3), (3,3)])
@@ -99,7 +85,9 @@ testBoardAccepts = "boardAccepts" ~:
     , "simpleok" ~: True ~=?  boardAccepts (mk 3 2 (replicate 4 ERoad)) bSimple 
     , "oneside" ~: True ~=?  boardAccepts (mk 3 2 [ECity,ECity, ECity, ERoad]) bSimple 
     , "oneside" ~: True ~=?  boardAccepts (mk 3 2 [ECity,ECity, ECity, ERoad]) bSimple 
-    -- , "good" ~: True ~=?  boardAccepts (t1, (Position 2 2)) b
+    , TestCase $ putStrLn $ show board2
+    , TestCase $ putStrLn $ "Neighbours on 2,2: \n" ++ show (neighbours (Position 2 2) board2)
+    , "good" ~: True ~=?  boardAccepts (mk 2 2 [ECity, EFarm, ERoad, EFarm]) board2 
   ]
   where
     b = bStart
@@ -111,6 +99,27 @@ testAccepts = "accepts" ~:
   [ False ~=? accpt (mk 2 2 [ERoad, ERoad, ERoad, ERoad]) (mk 3 2 [ECity, ECity, ECity, ECity])
   , True ~=? accpt (mk 2 2 [EFarm, ERoad, EFarm, EFarm]) (mk 3 2 [ECity, ECity, ECity, ERoad])
   ]
-  where 
-    mk x y grd = (initTile { tileEndTerrains = grd }, Position x y)
- 
+
+mk x y grd = (initTile { tileEndTerrains = grd }, Position x y)
+
+board2 = parseSceneToBoard scene
+  where
+    scene = unlines
+      [ "ff fr ff"
+      , "ff fc rf"
+      , ""
+      , "ff .. ff"
+      , "ff .. ff"
+      ]
+
+parseSceneToBoard :: String -> Board
+parseSceneToBoard s = 
+  foldl' f initBoard $ zip [1..] $ parseScene s
+
+f ::  Board -> (Int, [SceneComp]) -> Board
+f b (row, scs) = foldl' (g row) b $ zip [1..] scs 
+
+g :: Int -> Board -> (Int, SceneComp) -> Board
+g row b (col, (Just t, p)) = place (t, Position row col) b
+g _   b (_, (Nothing, p))  = b
+

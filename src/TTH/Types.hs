@@ -9,12 +9,14 @@ data Face = NorthFace
           | WestFace 
   deriving (Show, Eq, Ord, Enum, Bounded)
 
+
 nesw ::  [Direction]
 nesw = [North .. West]
 neswFaces ::  [Face]
 neswFaces = [NorthFace .. WestFace]
 
 data Position = Position Int Int deriving (Show, Ord, Eq)
+type TPos = (Tile, Position)
 
 data Terrain = Road
              | City

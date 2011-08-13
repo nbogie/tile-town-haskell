@@ -18,9 +18,9 @@ place (t, p) b = Board newSlots
         (Just _) -> error $ "Already a tile placed at "++ show p
         _ -> M.insert p t slots
 
-neighbours :: Position -> Board -> [Tile]
+neighbours :: Position -> Board -> [TPos]
 neighbours pos b = 
-  mapMaybe (tileAt b) (adjacentPositions pos)
+  mapMaybe (tileAndPosAt b) (adjacentPositions pos)
 
 adjacentPositions :: Position -> [Position]
 adjacentPositions p = 
@@ -32,10 +32,14 @@ adjacentPosition (Position x y) East  = Position (x+1) y
 adjacentPosition (Position x y) South = Position x     (y+1)
 adjacentPosition (Position x y) West  = Position (x-1) y
 
+tileAndPosAt :: Board -> Position -> Maybe TPos
+tileAndPosAt b p = case tileAt b p of
+  Just t -> Just (t, p)
+  Nothing -> Nothing
+
 tileAt :: Board -> Position -> Maybe Tile
 tileAt b p = 
   M.lookup p (playedTiles b)
-
 
 findTilePos :: Board -> Tile -> Position
 findTilePos b t = case find (\(_p, tOther) -> tileId t == tileId tOther) kvs of
@@ -54,14 +58,11 @@ boardAccepts (t,p) b = do
   where
     emptySpot = Nothing == M.lookup p (playedTiles b)
     ns = neighbours p b
-    nswp = zip ns $ map (findTilePos b) ns
     hasANeighbour = not $ null ns
-    sidesMatchOnAll = and $ map (accpt (t,p)) nswp
+    sidesMatchOnAll = and $ map (accpt (t,p)) ns
 
 accpt :: TPos -> TPos -> Bool
 accpt (t0, p0) (t1, p1) = accepts (t0, faceFromTo p0 p1) t1
-
-type TPos = (Tile, Position)
 
 areAdjacent :: Position -> Position -> Bool
 areAdjacent p0 p1 = p0 `elem` adjacentPositions p1
