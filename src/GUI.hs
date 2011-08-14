@@ -1,27 +1,33 @@
 import Data.Char ( toLower )
-import Data.IORef ( IORef, newIORef, readIORef, modifyIORef )
+import Data.IORef ( IORef, newIORef, readIORef, modifyIORef, writeIORef )
 import System.Exit ( exitWith, ExitCode(ExitSuccess) )
 import Graphics.UI.GLUT as GLUT
 import Graphics.Rendering.OpenGL as GL
 import Types
+import Board
 import Parser (demoParse)
 import Control.Monad 
 import Data.Map as M
 import Data.List (foldl')
 
 data State = State { leftFirst :: IORef Bool
-                     , sTiles :: [Tile]
+                     , sTiles :: IORef [Tile]
                      , floatingTile :: IORef Tile
-                     , tileMap :: IORef TileMap
+                     , board :: IORef Board
                      , cursorPos :: IORef Posn }
 
 makeState :: [Tile] -> TileMap -> IO State
 makeState ts tmap = do
    l  <- newIORef True
-   tm <- newIORef tmap
-   fTile <- newIORef $ head ts
-   cpos <- newIORef $ Posn 5 5
-   return $ State { leftFirst = l, tileMap = tm, floatingTile  = fTile, sTiles = ts, cursorPos = cpos}
+   b <- newIORef (Board tmap)
+   rFTile <- newIORef $ head ts
+   rCPos <- newIORef $ Posn 5 5
+   rTiles <- newIORef ts
+   return $ State { leftFirst = l
+                  , board = b
+                  , floatingTile  = rFTile
+                  , sTiles = rTiles
+                  , cursorPos = rCPos}
 
 myInit :: IO ()
 myInit = do
@@ -39,8 +45,25 @@ drawTiles tmap = do
   let ts = M.assocs tmap
   forM_ ts drawTile
 
-layTile :: Posn -> Tile -> TileMap -> IO TileMap
-layTile p t tmap = undefined
+uiRotateTile :: State -> IO ()
+uiRotateTile state = do
+  modifyIORef (floatingTile state) (rotateTile Types.CCW)
+  GLUT.postRedisplay Nothing
+
+layTile :: State -> IO ()
+layTile state = do
+  cpos <- readIORef $ cursorPos state
+  fTile <- readIORef $ floatingTile state
+  ts <- readIORef $ sTiles state
+  b <- readIORef $ board state
+  case (place (fTile, cpos)) b of
+    Left err -> putStrLn $ "UIFeedback: Already a piece at " ++ show cpos
+    Right b' -> do
+      putStrLn $ "Laying tile at " ++ show cpos
+      writeIORef (board state) b'
+      writeIORef (floatingTile state) (head ts)
+      modifyIORef (sTiles state) tail
+  GLUT.postRedisplay Nothing
 
 drawTile tpos@(Posn x y, t) = do
   GL.preservingMatrix $ do
@@ -72,7 +95,8 @@ colorFor Cloister = Color4 0.7 0 0 (1 :: GLfloat)
 display :: State -> GLUT.DisplayCallback
 display state = do
    clear [ ColorBuffer ]
-   tmap <- readIORef $ tileMap state
+   b <- readIORef $ board state
+   let tmap = playedTiles b
    cpos <- readIORef $ cursorPos state
    fTile <- readIORef $ floatingTile state
    drawTiles tmap
@@ -94,16 +118,24 @@ reshape size@(GLUT.Size w h) = do
 keyboard :: State -> GLUT.KeyboardMouseCallback
 keyboard state (GLUT.Char c) GLUT.Down _ _ = case toLower c of
    't'   -> do leftFirst state $~ not; GLUT.postRedisplay Nothing
-   '1'   -> do tileMap state $= positionTiles (take 15 $ sTiles state); GLUT.postRedisplay Nothing
-   '2'   -> do tileMap state $= positionTiles (take 30 $ sTiles state); GLUT.postRedisplay Nothing
-   '3'   -> do tileMap state $= positionTiles (take 45 $ sTiles state); GLUT.postRedisplay Nothing
+   '1'   -> showMore 15 state
+   '2'   -> showMore 30 state
+   '3'   -> showMore 45 state
+   '4'   -> showMore 60 state
    'i'   -> mvCursor North state
    'j'   -> mvCursor West state
    'k'   -> mvCursor South state
    'l'   -> mvCursor East state
+   'd'   -> layTile state
+   'r'   -> uiRotateTile state
    '\27' -> exitWith ExitSuccess   -- Escape key
    _     -> return ()
 keyboard _ _ _ _ _ = return ()
+
+showMore n state = do 
+  ts <- readIORef (sTiles state)
+  board state $= positionTiles (take n ts)
+  GLUT.postRedisplay Nothing
 
 mvCursor dirn state = do 
   modifyIORef (cursorPos state) (boundedStep (Bounds 0 0 20 20) dirn)
@@ -123,9 +155,9 @@ step South (Posn x y) = Posn x (y - 1)
 step East  (Posn x y) = Posn (x + 1) y
 step West  (Posn x y) = Posn (x - 1) y
 
-positionTiles :: [Tile] -> TileMap
+positionTiles :: [Tile] -> Board
 positionTiles ts = 
-  foldl' f M.empty $ zip ts [1..]
+  Board $ foldl' f M.empty $ zip ts [1..]
   where f :: TileMap -> (Tile, Int) -> TileMap
         f tmap (t,i) = M.insert (Posn (i `mod` 10) (i `div` 10)) t tmap
 

@@ -9,14 +9,19 @@ isLegalPlacement :: Tile -> Posn -> Board -> Bool
 isLegalPlacement = undefined
 
 -- Does no checking of game rules
-place :: (Tile, Posn) -> Board -> Board
-place (t, p) b = Board newSlots
+place :: (Tile, Posn) -> Board -> Either String Board
+place (t, p) b = fmap Board newSlots
   where 
     slots = playedTiles b
     newSlots = 
       case M.lookup p slots of
-        (Just _) -> error $ "Already a tile placed at "++ show p
-        _ -> M.insert p t slots
+        (Just _) -> Left $ "Already a tile placed at "++ show p
+        _ -> Right $ M.insert p t slots
+
+placeOrFail tpos b = 
+  case place tpos b of
+    Left e -> error e
+    Right b -> b
 
 neighbours :: Posn -> Board -> [Neighbour]
 neighbours p b = 

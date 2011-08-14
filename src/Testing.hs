@@ -18,7 +18,7 @@ bStart =
   foldl' addT initBoard $ zip t1WithIds (map t2p [(1,2), (3,2), (2,3), (3,3)])
   where
     addT :: Board -> (Tile, Posn) -> Board
-    addT b (t, p) = place (t, p) b
+    addT b (t, p) = placeOrFail (t, p) b
 
 main ::  IO Counts
 main = runTestTT tests
@@ -62,7 +62,7 @@ testBoardAccepts = "boardAccepts" ~:
     ]
   where
     b = bStart
-    bSimple = place (mk 2 2 [EFarm, ERoad, EFarm, EFarm]) initBoard
+    bSimple = placeOrFail (mk 2 2 [EFarm, ERoad, EFarm, EFarm]) initBoard
     mk x y grd = (initTile { tileEndTerrains = grd }, Posn x y)
 
 testAccepts = "accepts" ~: 

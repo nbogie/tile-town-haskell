@@ -1,6 +1,7 @@
 module Types where
 
 import qualified Data.Map as M
+import Data.List (transpose)
 
 data Direction = North | East | South | West deriving (Show, Eq, Ord, Enum, Bounded)
 data Face = NorthFace 
@@ -86,6 +87,22 @@ rotateElems [] _ = []
 rotateElems [t] _ = [t]
 rotateElems (t:rest) CCW = rest ++ [t]
 rotateElems ts        CW = last ts : init ts
+
+rotateTile :: RotationDir -> Tile -> Tile
+rotateTile dir t = 
+  t { tileEndTerrains = rotateElems (tileEndTerrains t) dir
+    , tileGrid = rotateGrid dir (tileGrid t)
+    }
+rotateGrid :: RotationDir -> Grid -> Grid
+rotateGrid dir (Grid tss) = Grid $ rotateLists tss
+
+-- TODO: wtf
+rotateLists :: [[a]] -> [[a]]
+rotateLists = rot' . reverse
+rot' [[]] = [[]]
+rot' tts | 1 == length (head tts) = [ firstRow tts ]
+         | otherwise              = firstRow tts : rot' (map (drop 1) tts)
+  where firstRow = map head
 
 type TileId = Int
 
