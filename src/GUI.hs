@@ -9,11 +9,15 @@ import Parser (demoParse)
 import Control.Monad 
 import Data.Map as M
 import Data.List (foldl')
+import Shuffle
+
+-- Notes: $~ is modifyIORef shorthand
 
 data State = State { leftFirst :: IORef Bool
                      , sTiles :: IORef [Tile]
                      , floatingTile :: IORef Tile
                      , board :: IORef Board
+                     , relaxRules :: IORef Bool
                      , cursorPos :: IORef Posn }
 
 makeState :: [Tile] -> TileMap -> IO State
@@ -23,10 +27,12 @@ makeState ts tmap = do
    rFTile <- newIORef $ head ts
    rCPos <- newIORef $ Posn 5 5
    rTiles <- newIORef ts
+   rRelaxRules <- newIORef False
    return $ State { leftFirst = l
                   , board = b
                   , floatingTile  = rFTile
                   , sTiles = rTiles
+                  , relaxRules = rRelaxRules
                   , cursorPos = rCPos}
 
 myInit :: IO ()
@@ -47,8 +53,17 @@ drawTiles tmap = do
 
 uiRotateTile :: State -> IO ()
 uiRotateTile state = do
-  modifyIORef (floatingTile state) (rotateTile Types.CCW)
+  (floatingTile state) $~ (rotateTile Types.CCW)
   GLUT.postRedisplay Nothing
+
+infoAtCursor :: State -> IO ()
+infoAtCursor state = do
+  cpos <- readIORef $ cursorPos state
+  b <- readIORef $ board state
+  case tileAndPosAt b cpos of
+    Just (t,_p) -> putStrLn $ show t ++ " at " ++ show cpos
+    Nothing -> putStrLn $ "Nothing at " ++ show cpos
+  putStrLn $ "Neighbours: \n\t" ++ show (neighbours cpos b)
 
 layTile :: State -> IO ()
 layTile state = do
@@ -56,19 +71,25 @@ layTile state = do
   fTile <- readIORef $ floatingTile state
   ts <- readIORef $ sTiles state
   b <- readIORef $ board state
-  case (place (fTile, cpos)) b of
-    Left err -> putStrLn $ "UIFeedback: Already a piece at " ++ show cpos
-    Right b' -> do
-      putStrLn $ "Laying tile at " ++ show cpos
-      writeIORef (board state) b'
-      writeIORef (floatingTile state) (head ts)
-      modifyIORef (sTiles state) tail
+  relaxed <- readIORef $ relaxRules state
+  putStrLn $ "Floating tile: " ++ show fTile
+  if M.null (playedTiles b) || relaxed || boardAccepts (fTile, cpos) b
+    then
+      case (place (fTile, cpos)) b of
+        Left err -> putStrLn $ "UIFeedback: Already a piece at " ++ show cpos
+        Right b' -> do
+          putStrLn $ "Laying tile at " ++ show cpos
+          writeIORef (board state) b'
+          writeIORef (floatingTile state) (head ts)
+          (sTiles state) $~ tail
+    else
+      putStrLn $ "Board does not accept piece at: "++ show cpos
   GLUT.postRedisplay Nothing
 
 drawTile tpos@(Posn x y, t) = do
   GL.preservingMatrix $ do
     let Grid g = tileGrid t
-    forM_ (zip g [1..]) $ (\(gridLine,row) -> 
+    forM_ (zip (reverse g) [1..]) $ (\(gridLine,row) -> 
       forM_ (zip gridLine [1..]) $ (\(ter, col) -> do
         drawMyCube (bip x + col/10.0) (bip y + row/10.0) 0 (colorFor ter) 0.05
       ))
@@ -122,10 +143,12 @@ keyboard state (GLUT.Char c) GLUT.Down _ _ = case toLower c of
    '2'   -> showMore 30 state
    '3'   -> showMore 45 state
    '4'   -> showMore 60 state
+   'e'   -> relaxRules state $~ not
    'i'   -> mvCursor North state
    'j'   -> mvCursor West state
    'k'   -> mvCursor South state
    'l'   -> mvCursor East state
+   'z'   -> infoAtCursor state
    'd'   -> layTile state
    'r'   -> uiRotateTile state
    '\27' -> exitWith ExitSuccess   -- Escape key
@@ -138,7 +161,7 @@ showMore n state = do
   GLUT.postRedisplay Nothing
 
 mvCursor dirn state = do 
-  modifyIORef (cursorPos state) (boundedStep (Bounds 0 0 20 20) dirn)
+  (cursorPos state) $~ (boundedStep (Bounds 0 0 20 20) dirn)
   GLUT.postRedisplay Nothing
 
 data Bounds = Bounds Int Int Int Int deriving (Show)
@@ -166,7 +189,8 @@ positionTiles ts =
 -- handle input events.
 main :: IO ()
 main = do
-   tiles <- demoParse "../tileset.dat"
+   tilesSorted <- demoParse "../tileset.dat"
+   tiles <- shuffle tilesSorted
    (progName, _args) <- GLUT.getArgsAndInitialize
    initialDisplayMode $= [ GLUT.SingleBuffered, GLUT.RGBMode ]
    initialWindowSize $= Size 900 700

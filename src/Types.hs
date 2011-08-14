@@ -90,11 +90,13 @@ rotateElems ts        CW = last ts : init ts
 
 rotateTile :: RotationDir -> Tile -> Tile
 rotateTile dir t = 
-  t { tileEndTerrains = rotateElems (tileEndTerrains t) dir
+  t { tileEndTerrains = 
+        rotateElems (tileEndTerrains t) dir
     , tileGrid = rotateGrid dir (tileGrid t)
     }
 rotateGrid :: RotationDir -> Grid -> Grid
-rotateGrid dir (Grid tss) = Grid $ rotateLists tss
+rotateGrid CCW (Grid tss) = Grid $ rotateLists tss
+rotateGrid _ _ = undefined
 
 -- TODO: wtf
 rotateLists :: [[a]] -> [[a]]
@@ -148,3 +150,4 @@ turn n e = toEnum $ add (fromEnum (maxBound `asTypeOf` e) + 1) (fromEnum e) n
       add md x y = (x + y + md) `rem` md
 
 data Player = Player1 | Player2 deriving (Eq, Show, Enum)
+
