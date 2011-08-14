@@ -1,5 +1,5 @@
 import Data.Char ( toLower )
-import Data.IORef ( IORef, newIORef )
+import Data.IORef ( IORef, newIORef, readIORef, modifyIORef )
 import System.Exit ( exitWith, ExitCode(ExitSuccess) )
 import Graphics.UI.GLUT as GLUT
 import Graphics.Rendering.OpenGL as GL
@@ -8,32 +8,50 @@ import Parser (demoParse)
 import Control.Monad 
 import Data.Map as M
 import Data.List (foldl')
-data State = State { leftFirst :: IORef Bool }
 
-makeState :: IO State
-makeState = do
-   l <- newIORef True
-   return $ State { leftFirst = l }
+data State = State { leftFirst :: IORef Bool
+                     , sTiles :: [Tile]
+                     , floatingTile :: IORef Tile
+                     , tileMap :: IORef TileMap
+                     , cursorPos :: IORef Posn }
+
+makeState :: [Tile] -> TileMap -> IO State
+makeState ts tmap = do
+   l  <- newIORef True
+   tm <- newIORef tmap
+   fTile <- newIORef $ head ts
+   cpos <- newIORef $ Posn 5 5
+   return $ State { leftFirst = l, tileMap = tm, floatingTile  = fTile, sTiles = ts, cursorPos = cpos}
 
 myInit :: IO ()
 myInit = do
    -- shadeModel $= Flat
    GLUT.clearColor $= Color4 0 0 0 0
 
+drawCursor :: Posn -> IO ()
+drawCursor (Posn x y) =
+  drawMyCube (bip x/1.0 - 0.5) (bip y/1.0 - 0.5) 0 yellow 0.5
+
+yellow = Color4 1 1 0 (0.5 :: GLfloat)
+
 drawTiles :: TileMap -> IO ()
 drawTiles tmap = do
   let ts = M.assocs tmap
   forM_ ts drawTile
 
-drawTile tpos@(Posn x y,t) = do
+layTile :: Posn -> Tile -> TileMap -> IO TileMap
+layTile p t tmap = undefined
+
+drawTile tpos@(Posn x y, t) = do
   GL.preservingMatrix $ do
     let Grid g = tileGrid t
     forM_ (zip g [1..]) $ (\(gridLine,row) -> 
       forM_ (zip gridLine [1..]) $ (\(ter, col) -> do
         drawMyCube (bip x + col/10.0) (bip y + row/10.0) 0 (colorFor ter) 0.05
       ))
-  where bip :: Int -> GLfloat
-        bip = fromIntegral 
+
+bip :: Int -> GLfloat
+bip = fromIntegral 
 
 drawMyCube :: GLfloat -> GLfloat -> GLfloat -> Color4 GLfloat -> Height -> IO ()
 drawMyCube x y rot colr sz = do
@@ -51,10 +69,15 @@ colorFor City = Color4 0.5 0.5 0.5 (1 :: GLfloat)
 colorFor Terminus = Color4 0.5 0 0.5 (1 :: GLfloat)
 colorFor Cloister = Color4 0.7 0 0 (1 :: GLfloat)
 
-display :: TileMap -> State -> GLUT.DisplayCallback
-display tiles state = do
+display :: State -> GLUT.DisplayCallback
+display state = do
    clear [ ColorBuffer ]
-   drawTiles tiles
+   tmap <- readIORef $ tileMap state
+   cpos <- readIORef $ cursorPos state
+   fTile <- readIORef $ floatingTile state
+   drawTiles tmap
+   drawTile (cpos, fTile)
+   drawCursor cpos
    flush
 
 reshape :: GLUT.ReshapeCallback
@@ -71,9 +94,34 @@ reshape size@(GLUT.Size w h) = do
 keyboard :: State -> GLUT.KeyboardMouseCallback
 keyboard state (GLUT.Char c) GLUT.Down _ _ = case toLower c of
    't'   -> do leftFirst state $~ not; GLUT.postRedisplay Nothing
+   '1'   -> do tileMap state $= positionTiles (take 15 $ sTiles state); GLUT.postRedisplay Nothing
+   '2'   -> do tileMap state $= positionTiles (take 30 $ sTiles state); GLUT.postRedisplay Nothing
+   '3'   -> do tileMap state $= positionTiles (take 45 $ sTiles state); GLUT.postRedisplay Nothing
+   'i'   -> mvCursor North state
+   'j'   -> mvCursor West state
+   'k'   -> mvCursor South state
+   'l'   -> mvCursor East state
    '\27' -> exitWith ExitSuccess   -- Escape key
    _     -> return ()
 keyboard _ _ _ _ _ = return ()
+
+mvCursor dirn state = do 
+  modifyIORef (cursorPos state) (boundedStep (Bounds 0 0 20 20) dirn)
+  GLUT.postRedisplay Nothing
+
+data Bounds = Bounds Int Int Int Int deriving (Show)
+boundedStep :: Bounds -> Direction -> Posn -> Posn
+boundedStep bounds dirn p = 
+  let p' = step dirn p
+  in if inBounds p' bounds then p' else p
+        where 
+          inBounds (Posn x y) (Bounds x0 y0 x1 y1) = 
+            x >= x0 && x <= x1 && y >= y0 && y <= y1
+
+step North (Posn x y) = Posn x (y + 1)
+step South (Posn x y) = Posn x (y - 1)
+step East  (Posn x y) = Posn (x + 1) y
+step West  (Posn x y) = Posn (x - 1) y
 
 positionTiles :: [Tile] -> TileMap
 positionTiles ts = 
@@ -87,14 +135,13 @@ positionTiles ts =
 main :: IO ()
 main = do
    tiles <- demoParse "../tileset.dat"
-   let tileMap = positionTiles tiles
    (progName, _args) <- GLUT.getArgsAndInitialize
    initialDisplayMode $= [ GLUT.SingleBuffered, GLUT.RGBMode ]
    initialWindowSize $= Size 900 700
    createWindow progName
-   state <- makeState
+   state <- makeState tiles M.empty
    myInit
    reshapeCallback $= Just reshape
    keyboardMouseCallback $= Just (keyboard state)
-   displayCallback $= display tileMap state
+   displayCallback $= display state
    mainLoop
